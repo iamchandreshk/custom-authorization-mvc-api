@@ -11,7 +11,8 @@ namespace Authorization.Controllers
         [Authorize]
         public IHttpActionResult Get()
         {
-            return Ok(new { secureData = "You have to be authenticated to access this!" });
+            var user = System.Web.HttpContext.Current.User;
+            return Ok(new { secureData = "Hi!, " + user.Identity.Name });
         }
     }
 }

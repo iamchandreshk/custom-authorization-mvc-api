@@ -16,19 +16,30 @@ namespace Authorization.Filters
 
         public override void OnAuthorization(HttpActionContext actionContext)
         {
-            var encoding = Encoding.GetEncoding("iso-8859-1");
-            string credentials = encoding.GetString
-                (Convert.FromBase64String(actionContext.Request.Headers.Authorization.Parameter));
+            if (Authorise(actionContext))
+            {
+                base.OnAuthorization(actionContext);
+            }
+        }
 
-            var credentialsArray = credentials.Split(':');
+        private static bool Authorise(HttpActionContext credentials)
+        {
+            var credential = Encoding.GetEncoding("iso-8859-1").GetString
+               (Convert.FromBase64String(credentials.Request.Headers.Authorization.Parameter));
+
+            var credentialsArray = credential.Split('$');
             var username = credentialsArray[0];
             var password = credentialsArray[1];
-            if (username == "test" && password == "test" && actionContext.Request.Headers.Authorization.Scheme == "Basic")
+            var datetime = Convert.ToDateTime(credentialsArray[2]);
+            var result = datetime > DateTime.UtcNow.AddMinutes(-5);
+
+            if (username == "test" && password == "test" && result && credentials.Request.Headers.Authorization.Scheme == "Basic")
             {
                 var identity = new GenericIdentity(username);
                 SetPrincipal(new GenericPrincipal(identity, null));
-                base.OnAuthorization(actionContext);
+                return true;
             }
+            return false;
         }
 
         private static void SetPrincipal(IPrincipal principal)
@@ -39,10 +50,5 @@ namespace Authorization.Filters
                 HttpContext.Current.User = principal;
             }
         }
-
-        //protected override bool AuthorizeCore(HttpContextBase httpContext)
-        //{
-        //    return true;// if my current user is authorised
-        //}
     }
 }
